@@ -34,14 +34,14 @@ Uber operates on a microservices architecture. Below is the interaction between 
 ```mermaid
 graph TD
     %% Actors
-    Rider((Rider App))
-    Driver((Driver App))
+    Rider(("Rider App"))
+    Driver(("Driver App"))
 
     %% Load Balancer
-    LB[Load Balancer]
+    LB["Load Balancer"]
 
     %% Gateway
-    API[API Gateway]
+    API["API Gateway"]
 
     %% Services
     subgraph "Core Services"
@@ -55,7 +55,7 @@ graph TD
     subgraph "Data Layer"
         Redis[("Redis (Pub/Sub)")]
         Cassandra[("Cassandra (History)")]
-        Kafka{Apache Kafka}
+        Kafka{{"Apache Kafka"}}
     end
 
     %% Flows
@@ -90,11 +90,12 @@ Uber partitions the world into hexagons. Why Hexagons?
 | **Distortion** | Higher distortion near poles | **Low distortion** |
 | **Traversal** | Complex pathfinding | **Smooth approximations of circles** |
 
+```mermaid
 graph TD
     subgraph "Why H3 (Hexagons)?"
         direction TB
-        City[Level 5: City Scale] -->|Divides into| District[Level 7: Neighborhood]
-        District -->|Divides into| Street[Level 9: Street Block]
+        City["Level 5: City Scale"] -->|Divides into| District["Level 7: Neighborhood"]
+        District -->|Divides into| Street["Level 9: Street Block"]
         
         style City fill:#f9f,stroke:#333,stroke-width:2px
         style District fill:#bbf,stroke:#333,stroke-width:2px
@@ -106,6 +107,7 @@ graph TD
         B -->|Query| C{Neighbors}
         C -->|Result| D[6 Equidistant Cells]
     end
+```
 
 > **Implementation:** Every driver's GPS location is mapped to a unique H3 Hexagon ID. The system queries the driver's hexagon and the 6 immediate neighbors to find candidates.
 
@@ -115,6 +117,7 @@ graph TD
 
 How a ride request is processed:
 
+```mermaid
 sequenceDiagram
     autonumber
     actor Rider
@@ -148,22 +151,6 @@ sequenceDiagram
     DISCO->>Driver: Send Job Offer (WebSocket)
     Driver-->>DISCO: Accept Job
     DISCO-->>App: Driver Found!
-
-```mermaid
-sequenceDiagram
-    participant Rider
-    participant DispatchSvc
-    participant RedisGeo
-    participant Driver
-
-    Rider->>DispatchSvc: Request Ride (Lat, Long)
-    DispatchSvc->>DispatchSvc: Convert (Lat, Long) to H3 ID
-    DispatchSvc->>RedisGeo: Get Drivers in H3 ID + Neighbors
-    RedisGeo-->>DispatchSvc: Returns List [DriverA, DriverB, DriverC]
-    DispatchSvc->>DispatchSvc: Calculate ETA & Sort
-    DispatchSvc->>Driver: Send Ride Offer (WebSocket)
-    Driver-->>DispatchSvc: Accept Ride
-    DispatchSvc-->>Rider: Driver Found!
 ```
 
 ---
@@ -171,6 +158,8 @@ sequenceDiagram
 ## Data Storage & Partitioning
 
 To handle the load, the data layer is split into "Hot" (Real-time) and "Cold" (Historical) storage.
+
+```mermaid
 flowchart LR
     %% Nodes
     Driver((Driver))
@@ -196,6 +185,7 @@ flowchart LR
     Kafka -->|Archive| Cass
     Cass -->|Analyze| Analytics[Data Science]
     end
+```
 
 ### 1. Hot Storage (Redis)
 * **Purpose:** Tracks current driver locations.
