@@ -59,8 +59,8 @@ graph TD
     end
 
     %% Flows
-    Rider -->|Request Ride| LB
-    Driver -->|Update GPS| LB
+    Rider -->|"Request Ride"| LB
+    Driver -->|"Update GPS"| LB
     LB --> API
     
     API --> LocationSvc
@@ -69,8 +69,8 @@ graph TD
     Kafka --> Cassandra
     
     API --> DispatchSvc
-    DispatchSvc -->|Query Nearby| Redis
-    DispatchSvc -->|Calculate Cost| MapSvc
+    DispatchSvc -->|"Query Nearby"| Redis
+    DispatchSvc -->|"Calculate Cost"| MapSvc
 ```
 
 ---
