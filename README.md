@@ -90,6 +90,23 @@ Uber partitions the world into hexagons. Why Hexagons?
 | **Distortion** | Higher distortion near poles | **Low distortion** |
 | **Traversal** | Complex pathfinding | **Smooth approximations of circles** |
 
+graph TD
+    subgraph "Why H3 (Hexagons)?"
+        direction TB
+        City[Level 5: City Scale] -->|Divides into| District[Level 7: Neighborhood]
+        District -->|Divides into| Street[Level 9: Street Block]
+        
+        style City fill:#f9f,stroke:#333,stroke-width:2px
+        style District fill:#bbf,stroke:#333,stroke-width:2px
+        style Street fill:#dfd,stroke:#333,stroke-width:2px
+    end
+    
+    subgraph "Advantage"
+        A[Driver Location] -->|Mapped to| B(Hexagon ID)
+        B -->|Query| C{Neighbors}
+        C -->|Result| D[6 Equidistant Cells]
+    end
+
 > **Implementation:** Every driver's GPS location is mapped to a unique H3 Hexagon ID. The system queries the driver's hexagon and the 6 immediate neighbors to find candidates.
 
 ---
@@ -98,12 +115,39 @@ Uber partitions the world into hexagons. Why Hexagons?
 
 How a ride request is processed:
 
-1.  **Request:** User requests a ride. The **Websocket Service** receives the request.
-2.  **Hexagon Lookup:** The **Dispatch Service** identifies the user's H3 Hexagon ID.
-3.  **Search:** It queries **Redis** for all drivers currently active in that Hexagon ID (and neighboring rings).
-4.  **Filtering:** It filters out drivers who are already busy.
-5.  **ETA Calculation:** The list of candidate drivers is sent to the **Routing Engine (Maps)** to calculate the actual ETA (road distance, not straight-line).
-6.  **Offer:** The ride is offered to the driver with the lowest ETA.
+sequenceDiagram
+    autonumber
+    actor Rider
+    participant App as Mobile App
+    participant LB as Load Balancer
+    participant DISCO as Dispatch Svc
+    participant GEO as Redis (Geo)
+    participant ETA as Routing Svc
+    actor Driver
+
+    Rider->>App: Clicks "Request Ride"
+    App->>LB: POST /api/trips (Lat, Long)
+    LB->>DISCO: Forward Request
+    
+    rect rgb(240, 248, 255)
+    note right of DISCO: 1. Find Candidates
+    DISCO->>DISCO: Convert Lat/Long -> H3 ID
+    DISCO->>GEO: GEORADIUS (H3_ID, 2km)
+    GEO-->>DISCO: Return [Driver A, Driver B, Driver C]
+    end
+
+    rect rgb(255, 240, 240)
+    note right of DISCO: 2. Filter & Rank
+    loop For each Driver
+        DISCO->>ETA: GetETA(Origin, DriverLoc)
+        ETA-->>DISCO: 4 mins
+    end
+    DISCO->>DISCO: Sort by ETA ASC
+    end
+    
+    DISCO->>Driver: Send Job Offer (WebSocket)
+    Driver-->>DISCO: Accept Job
+    DISCO-->>App: Driver Found!
 
 ```mermaid
 sequenceDiagram
@@ -127,6 +171,31 @@ sequenceDiagram
 ## Data Storage & Partitioning
 
 To handle the load, the data layer is split into "Hot" (Real-time) and "Cold" (Historical) storage.
+flowchart LR
+    %% Nodes
+    Driver((Driver))
+    API[Ingestion API]
+    Kafka{Kafka Stream}
+    Redis[(Redis Pub/Sub)]
+    Cass[(Cassandra)]
+    
+    %% Styles
+    classDef storage fill:#eee,stroke:#333,stroke-width:2px;
+    class Redis,Cass storage;
+
+    %% Connections
+    Driver -->|GPS Ping (Every 4s)| API
+    API -->|Publish| Kafka
+    
+    subgraph "Hot Path (Real-time)"
+    Kafka -->|Update| Redis
+    Redis -->|Read| Matcher[Matching Service]
+    end
+    
+    subgraph "Cold Path (History)"
+    Kafka -->|Archive| Cass
+    Cass -->|Analyze| Analytics[Data Science]
+    end
 
 ### 1. Hot Storage (Redis)
 * **Purpose:** Tracks current driver locations.
