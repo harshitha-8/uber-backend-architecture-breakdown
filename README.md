@@ -45,22 +45,22 @@ graph TD
 
     %% Services
     subgraph "Core Services"
-        LocationSvc[Location Service]
-        DispatchSvc[Dispatch Service (DISCO)]
-        MapSvc[Maps / ETA Service]
-        UserProfile[User Profile Service]
+        LocationSvc["Location Service"]
+        DispatchSvc["Dispatch Service (DISCO)"]
+        MapSvc["Maps / ETA Service"]
+        UserProfile["User Profile Service"]
     end
 
     %% Data Stores
     subgraph "Data Layer"
-        Redis[(Redis Pub/Sub)]
-        Cassandra[(Cassandra - Location History)]
+        Redis[("Redis (Pub/Sub)")]
+        Cassandra[("Cassandra (History)")]
         Kafka{Apache Kafka}
     end
 
     %% Flows
     Rider -->|Request Ride| LB
-    Driver -->|Update GPS (Every 4s)| LB
+    Driver -->|Update GPS| LB
     LB --> API
     
     API --> LocationSvc
