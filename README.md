@@ -1,8 +1,8 @@
 # 🚖 How Uber Finds Nearby Drivers: System Design Architecture
 
-![Build Status](https://github.com/yourusername/uber-backend-architecture-breakdown)
-![System Design](https://newsletter.systemdesign.one/p/how-does-uber-find-nearby-drivers)
-![Tech Stack]()
+[![Build Status](https://img.shields.io/badge/Status-Maintained-green)](https://github.com/yourusername/uber-backend-architecture-breakdown)
+[![System Design](https://img.shields.io/badge/System%20Design-Advanced-orange)](https://newsletter.systemdesign.one/p/how-does-uber-find-nearby-drivers)
+[![Tech Stack](https://img.shields.io/badge/Tech-Kafka%20%7C%20Redis%20%7C%20H3-blue)]()
 
 > A detailed architectural breakdown of Uber's real-time marketplace, focusing on high-throughput geospatial matching and low-latency dispatching.
 
